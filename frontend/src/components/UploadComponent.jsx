@@ -1,8 +1,7 @@
 import { useState } from 'react';
 
-export default function UploadComponent({ onUpload, isUploading }) {
+export default function UploadComponent({ onUpload, isUploading, owner, onOwnerChange }) {
   const [selectedFile, setSelectedFile] = useState(null);
-  const [owner, setOwner] = useState('');
 
   function handleFileChange(event) {
     const file = event.target.files?.[0] || null;
@@ -12,13 +11,12 @@ export default function UploadComponent({ onUpload, isUploading }) {
   async function handleSubmit(event) {
     event.preventDefault();
 
-    if (!selectedFile || isUploading) {
+    if (!selectedFile || !owner.trim() || isUploading) {
       return;
     }
 
     await onUpload({ file: selectedFile, owner: owner.trim() });
     setSelectedFile(null);
-    setOwner('');
     event.target.reset();
   }
 
@@ -27,14 +25,15 @@ export default function UploadComponent({ onUpload, isUploading }) {
       <h2>Upload de Documento</h2>
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '0.75rem' }}>
-          <label htmlFor="owner">Responsavel (opcional)</label>
+          <label htmlFor="owner">Responsável</label>
           <br />
           <input
             id="owner"
             type="text"
             value={owner}
-            onChange={(event) => setOwner(event.target.value)}
+            onChange={(event) => onOwnerChange(event.target.value)}
             placeholder="Ex.: Maria"
+            required
           />
         </div>
 
@@ -44,7 +43,7 @@ export default function UploadComponent({ onUpload, isUploading }) {
           <input id="document" type="file" onChange={handleFileChange} required />
         </div>
 
-        <button type="submit" disabled={!selectedFile || isUploading}>
+        <button type="submit" disabled={!selectedFile || !owner.trim() || isUploading}>
           {isUploading ? 'Enviando...' : 'Enviar documento'}
         </button>
       </form>

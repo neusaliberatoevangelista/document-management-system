@@ -1,5 +1,17 @@
 const API_PREFIX = '/api';
 
+function getOwnerHeaders(owner) {
+  const normalizedOwner = String(owner || '').trim();
+
+  if (!normalizedOwner) {
+    throw new Error('Responsável é obrigatório.');
+  }
+
+  return {
+    'x-owner-id': normalizedOwner,
+  };
+}
+
 async function parseJsonOrThrow(response) {
   if (response.ok) {
     if (response.status === 204) {
@@ -41,8 +53,10 @@ function getFileNameFromContentDisposition(contentDisposition, fallbackName) {
   return fallbackName;
 }
 
-export async function listDocuments() {
-  const response = await fetch(`${API_PREFIX}/documents`);
+export async function listDocuments(owner) {
+  const response = await fetch(`${API_PREFIX}/documents`, {
+    headers: getOwnerHeaders(owner),
+  });
   return parseJsonOrThrow(response);
 }
 
@@ -50,20 +64,19 @@ export async function uploadDocument({ file, owner }) {
   const formData = new FormData();
   formData.append('file', file);
 
-  if (owner) {
-    formData.append('owner', owner);
-  }
-
   const response = await fetch(`${API_PREFIX}/upload`, {
     method: 'POST',
+    headers: getOwnerHeaders(owner),
     body: formData,
   });
 
   return parseJsonOrThrow(response);
 }
 
-export async function downloadDocument(documentId, fallbackName = 'documento') {
-  const response = await fetch(`${API_PREFIX}/documents/${documentId}/download`);
+export async function downloadDocument(documentId, owner, fallbackName = 'documento') {
+  const response = await fetch(`${API_PREFIX}/documents/${documentId}/download`, {
+    headers: getOwnerHeaders(owner),
+  });
 
   if (!response.ok) {
     await parseJsonOrThrow(response);

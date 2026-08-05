@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const { randomUUID } = require('crypto');
 const documentRepository = require('../repositories/documentRepository');
 
@@ -25,15 +26,35 @@ function registerUploadedDocument(file, owner = 'anonymous') {
   return documentRepository.save(documentMetadata);
 }
 
-function listDocuments() {
-  return documentRepository.findAll();
+function listDocuments(owner) {
+  const normalizedOwner = String(owner || '').trim();
+
+  if (!normalizedOwner) {
+    throw new Error('OWNER_REQUIRED');
+  }
+
+  return documentRepository.findByOwner(normalizedOwner);
 }
 
-function getDocumentById(id) {
+function getDocumentById(id, owner) {
+  const normalizedOwner = String(owner || '').trim();
+
+  if (!normalizedOwner) {
+    throw new Error('OWNER_REQUIRED');
+  }
+
   const document = documentRepository.findById(id);
 
   if (!document) {
     throw new Error('DOCUMENT_NOT_FOUND');
+  }
+
+  if (document.owner !== normalizedOwner) {
+    throw new Error('DOCUMENT_FORBIDDEN');
+  }
+
+  if (!fs.existsSync(document.filePath)) {
+    throw new Error('DOCUMENT_FILE_NOT_FOUND');
   }
 
   return document;

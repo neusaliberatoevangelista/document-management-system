@@ -4,16 +4,23 @@ import DocumentList from './components/DocumentList';
 import { listDocuments, uploadDocument, downloadDocument } from './services/documentApi';
 
 export default function App() {
+  const [owner, setOwner] = useState('');
   const [documents, setDocuments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
 
-  async function fetchDocuments() {
+  async function fetchDocuments(currentOwner) {
+    if (!currentOwner.trim()) {
+      setDocuments([]);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const data = await listDocuments();
+      const data = await listDocuments(currentOwner);
       setDocuments(data);
     } catch (error) {
       setFeedback({ type: 'error', message: error.message });
@@ -23,8 +30,8 @@ export default function App() {
   }
 
   useEffect(() => {
-    fetchDocuments();
-  }, []);
+    fetchDocuments(owner);
+  }, [owner]);
 
   async function handleUpload(payload) {
     setIsUploading(true);
@@ -32,7 +39,7 @@ export default function App() {
 
     try {
       await uploadDocument(payload);
-      await fetchDocuments();
+      await fetchDocuments(owner);
       setFeedback({ type: 'success', message: 'Documento enviado com sucesso.' });
     } catch (error) {
       setFeedback({ type: 'error', message: error.message });
@@ -45,7 +52,7 @@ export default function App() {
     setFeedback({ type: '', message: '' });
 
     try {
-      const { blob, fileName } = await downloadDocument(documentId, fallbackName);
+      const { blob, fileName } = await downloadDocument(documentId, owner, fallbackName);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
 
@@ -76,7 +83,14 @@ export default function App() {
     <main style={{ maxWidth: 900, margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif' }}>
       <h1>Document Management System</h1>
 
-      <UploadComponent onUpload={handleUpload} isUploading={isUploading} />
+      <UploadComponent
+        onUpload={handleUpload}
+        isUploading={isUploading}
+        owner={owner}
+        onOwnerChange={setOwner}
+      />
+
+      {!owner.trim() ? <p>Informe o responsável para listar, enviar e baixar documentos.</p> : null}
 
       {feedback.message ? <p style={feedbackStyle}>{feedback.message}</p> : null}
 
